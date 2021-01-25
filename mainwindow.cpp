@@ -8,7 +8,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    plotter = new Plotter(5, 5, 780, 500, this);
+    plotter = QSharedPointer<Plotter>(new Plotter(5, 5, 780, 500, this));
 }
 
 MainWindow::~MainWindow()
@@ -19,10 +19,6 @@ MainWindow::~MainWindow()
             thread->wait();
         }
     }
-    if(fileParser)
-        delete fileParser;
-    if(thread)
-        delete thread;
     delete ui;
 }
 
@@ -39,14 +35,12 @@ void MainWindow::on_pushButton_clicked()
     if(thread){
         thread->quit();
         thread->wait();
-        delete thread;
-        delete fileParser;
     }
-    thread = new QThread;
-    fileParser = new FileParser(plotter, fileName);
-    fileParser->moveToThread(thread);
-    connect(thread, SIGNAL(started()), fileParser, SLOT(slotRun()));
-    connect(fileParser, SIGNAL(sigProcessComplete(int, QString)), this, SLOT(slotDataReady(int, QString)));
+    thread = QSharedPointer<QThread>(new QThread);
+    fileParser = QSharedPointer<FileParser>(new FileParser(plotter, fileName));
+    fileParser->moveToThread(thread.data());
+    connect(thread.data(), SIGNAL(started()), fileParser.data(), SLOT(slotRun()));
+    connect(fileParser.data(), SIGNAL(sigProcessComplete(int, QString)), this, SLOT(slotDataReady(int, QString)));
     thread->start();
     threadRunning = true;
     ui->pushButton->setEnabled(false);
@@ -56,20 +50,17 @@ void MainWindow::slotDataReady(int result, QString header)
 {
     threadRunning = false;
     switch(result){
-        case 0:
+        case FileParserState::SUCCESS:
             drawPlot();
             ui->textBrowser->setText(header);
             break;
-        case -1:
+        case FileParserState::HEADER_ERROR:
             QMessageBox::warning(this, "Error", "There is header in the middle of the data. File is incorrect.", QMessageBox::Ok);
             break;
-        case -2:
+        case FileParserState::ELEMENTS_COUNT_ERROR:
             QMessageBox::warning(this, "Error", "Wrong elements count in data. File is incorrect.", QMessageBox::Ok);
             break;
-        case -3:
-            QMessageBox::warning(this, "Error", "Can't convert data to float.", QMessageBox::Ok);
-            break;
-        case -4:
+        case FileParserState::FILE_CANT_OPEN:
             QMessageBox::warning(this, "Error", "Can't open file.", QMessageBox::Ok);
             break;
     }

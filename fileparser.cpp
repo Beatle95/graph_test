@@ -1,13 +1,12 @@
 #include "fileparser.h"
 
-FileParser::FileParser(Plotter* _plotter, QString& file, QObject *parent) : QObject(parent), plotter(_plotter) {
+FileParser::FileParser(QSharedPointer<Plotter>& _plotter, QString& file, QObject *parent) : QObject(parent), plotter(_plotter) {
     filePath = file.toStdWString();
 }
 
 //Reading data from selected file and preparing for drawing
 //Possible result values:
-//0 - success; -1 - there is header in the middle of the data; -2 - wrong elements count in data line; -3 - can't convert data to float
-//-4 - can't open file
+//0 - success; -1 - there is header in the middle of the data; -2 - wrong elements count in data line; -4 - can't open file
 int FileParser::processFile(){
     std::ifstream file;
     file.open(filePath);
@@ -25,7 +24,7 @@ int FileParser::processFile(){
             //but when we reach data, there can't be any headers further
             if(getTerms(line, terms)){
                 if(!isHeader)
-                    return -1;
+                    return FileParserState::HEADER_ERROR;
                 header << line << '\n';
             }
             else{
@@ -34,25 +33,20 @@ int FileParser::processFile(){
                 isHeader = false;
                 //Now we get data
                 if(terms.size() != 2)		//If elements coutn != 2 -> data corrupted
-                    return -2;
+                    return FileParserState::ELEMENTS_COUNT_ERROR;
                 float timestamp = 0.0f;
                 float measurement = 0.0f;
-                bool isOkay = true;
                 timestamp = atof(terms[0].data());
-                if(!isOkay)
-                   return -3;
                 measurement = atof(terms[1].data());
-                if(!isOkay)
-                    return -3;
                 plotter->appendPlotPoint(timestamp, measurement);
             }
        }
        file.close();
     }
     else
-        return -4;
+        return FileParserState::FILE_CANT_OPEN;
 
-    return 0;
+    return FileParserState::SUCCESS;
 }
 
 void FileParser::slotRun()

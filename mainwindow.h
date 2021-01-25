@@ -5,11 +5,10 @@
 #include <QThread>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QSharedPointer>
 
 #include "fileparser.h"
 #include "plotter.h"
-
-#include <QDebug>
 
 class FileParser;
 
@@ -26,9 +25,9 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    FileParser* fileParser = nullptr;
-    QThread* thread = nullptr;
-    Plotter* plotter = nullptr;
+    QSharedPointer<QThread> thread;
+    QSharedPointer<FileParser> fileParser;
+    QSharedPointer<Plotter> plotter;
     bool threadRunning = false;
 
     void drawPlot();

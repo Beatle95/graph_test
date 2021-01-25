@@ -12,8 +12,6 @@
 
 #include <stdexcept>
 
-#include <QDebug>
-
 class Plotter : public QWidget
 {
 public:
@@ -40,12 +38,12 @@ private:
     QVector<float> y;
     QPoint* drawPoints = nullptr;
 
+    int x_offset;
+    int y_offset;
+    int x_right_offset;
+    int y_top_offset;
     int size_x;
     int size_y;
-    int X_OFFSET;
-    int Y_OFFSET;
-    int X_RIGHT_OFFSET;
-    int Y_TOP_OFFSET;
     int xAxisDelta;
     int yAxisDelta;
     int drawCount;
@@ -55,7 +53,7 @@ private:
     inline QPoint transformCoordinate(float x, float y, float minX, float maxX, float minY, float maxY){
         float x_ret = (x - minX) / (maxX - minX);
         float y_ret = (y - minY) / (maxY - minY);
-        return QPoint(X_OFFSET + int(float(size_x - X_OFFSET - X_RIGHT_OFFSET)*x_ret), size_y - Y_OFFSET - int(float(size_y - Y_OFFSET - Y_TOP_OFFSET)*y_ret));
+        return QPoint(x_offset + int(float(size_x - x_offset - x_right_offset)*x_ret), size_y - y_offset - int(float(size_y - y_offset - y_top_offset)*y_ret));
     }
 
 protected:
